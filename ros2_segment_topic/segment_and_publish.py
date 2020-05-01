@@ -1,40 +1,46 @@
 import rclpy
 from rclpy.node import Node
 # TODO: cosa cambia tra le 2 immagini?
-from sensor_msgs.msg import Image#, CompressedImage
-#from PIL import Image as pilImage
-from ros2_segment_topic.models.DeepLabModel import *
+import sensor_msgs
+# from sensor_msgs.msg import Image  # , CompressedImage
+from cv_bridge import CvBridge
+import PIL
+from ros2_segment_topic.models.DeepLabModel import DeepLabModel
+import numpy as np
 
 
 class SegmentAndPublish(Node):
 
     def __init__(self):
         super().__init__('simple_segmenter')
-        self.model = DeepLabModel('/code/ros2_ws/data/deeplabv3_mnv2_cityscapes_train_2018_02_05.tar.gz')
+        self.model = DeepLabModel('/code/data/deeplabv3_mnv2_cityscapes_train_2018_02_05.tar.gz')
         print('model loaded successfully!')
 
         self.subscription = self.create_subscription(
-            Image,
+            sensor_msgs.msg.Image,
             'image/image_raw',
             self.listener_callback,
             10)
         self.subscription  # prevent unused variable warning
 
         self.bridge = CvBridge()
-        self.colormap = create_pascal_label_colormap()
-        self.publisher_ = self.create_publisher(Image, 'image/segmented', 10)
+        self.colormap = self.create_pascal_label_colormap()
+        self.publisher_ = self.create_publisher(sensor_msgs.msg.Image, 'image/segmented', 10)
 
     def listener_callback(self, msg):
         # extract image from msg 
-        cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        im_pil = Image.fromarray(cv_image)
+        cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+        im_pil = PIL.Image.fromarray(cv_image)
         image = self.model.run(im_pil)
         # convert image in msg
-        image = self.vis_segmentation_lite(image)
+        image = np.array(image[0])
+        # print(image.shape)
+        # image = self.vis_segmentation_lite(image)
         image = self.bridge.cv2_to_imgmsg(image, "bgr8")
+        print("converted")
         self.publisher_.publish(image)
     
-    def create_pascal_label_colormap():
+    def create_pascal_label_colormap(self):
         """Creates a label colormap used in PASCAL VOC segmentation benchmark.
 
         Returns:
@@ -50,8 +56,7 @@ class SegmentAndPublish(Node):
 
         return colormap
 
-
-    def label_to_color_image(self,label):
+    def label_to_color_image(self, label):
         """Adds color defined by the dataset colormap to the label.
 
         Args:
@@ -69,14 +74,13 @@ class SegmentAndPublish(Node):
         if label.ndim != 2:
             raise ValueError('Expect 2-D input label')
 
-
         if np.max(label) >= len(self.colormap):
             raise ValueError('label value too large.')
 
         return self.colormap[label]
 
-    def vis_segmentation_lite(img):
-        return label_to_color_image(img).astype(np.uint8)
+    def vis_segmentation_lite(self, img):
+        return self.label_to_color_image(img).astype(np.uint8)
 
 
 def main(args=None):
