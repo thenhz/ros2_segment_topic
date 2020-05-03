@@ -5,7 +5,7 @@ import sensor_msgs
 # from sensor_msgs.msg import Image  # , CompressedImage
 from cv_bridge import CvBridge
 import PIL
-from ros2_segment_topic.models.DeepLabModel import DeepLabModel
+from ros2_segment_topic.models.DeepLabModel import *
 import numpy as np
 
 
@@ -31,15 +31,19 @@ class SegmentAndPublish(Node):
         # extract image from msg 
         cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
         im_pil = PIL.Image.fromarray(cv_image)
-        image = self.model.run(im_pil)
+        resized_im, seg_map = self.model.run(im_pil)
+        seg_map = label_to_color_image(seg_map).astype(np.uint8)
+        PIL.Image.fromarray(seg_map).save("/code/ros2_ws/data/temp/asd.JPG")
+        #seg_map = np.array(resized_im)
+        #seg_map = np.array(seg_map)
         # convert image in msg
-        image = np.array(image[0])
-        # print(image.shape)
+        #seg_map = np.expand_dims(seg_map,axis=-1)
+        print(seg_map.shape);
         # image = self.vis_segmentation_lite(image)
-        image = self.bridge.cv2_to_imgmsg(image, "bgr8")
+        image = self.bridge.cv2_to_imgmsg(seg_map, "bgr8")
         print("converted")
         self.publisher_.publish(image)
-    
+        
     def create_pascal_label_colormap(self):
         """Creates a label colormap used in PASCAL VOC segmentation benchmark.
 

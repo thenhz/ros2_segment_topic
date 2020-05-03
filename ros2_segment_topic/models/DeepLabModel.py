@@ -101,11 +101,11 @@ def label_to_color_image(label):
 
     return colormap[label]
 
-
+"""
 def vis_segmentation_lite(img):
     return label_to_color_image(img).astype(np.uint8)
 
-"""
+
 def vis_segmentation(image, seg_map):
     #Visualizes input image, segmentation map and overlay view.
     plt.figure(figsize=(15, 5))
