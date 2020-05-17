@@ -33,15 +33,15 @@ class SegmentAndPublish(Node):
         im_pil = PIL.Image.fromarray(cv_image)
         resized_im, seg_map = self.model.run(im_pil)
         seg_map = label_to_color_image(seg_map).astype(np.uint8)
-        PIL.Image.fromarray(seg_map).save("/code/ros2_ws/data/temp/asd.JPG")
+        #PIL.Image.fromarray(seg_map).save("/code/ros2_ws/data/temp/asd.JPG")
         #seg_map = np.array(resized_im)
         #seg_map = np.array(seg_map)
         # convert image in msg
         #seg_map = np.expand_dims(seg_map,axis=-1)
-        print(seg_map.shape);
+        #print(seg_map.shape);
         # image = self.vis_segmentation_lite(image)
         image = self.bridge.cv2_to_imgmsg(seg_map, "bgr8")
-        print("converted")
+        #print("converted")
         self.publisher_.publish(image)
         
     def create_pascal_label_colormap(self):
